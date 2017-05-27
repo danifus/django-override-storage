@@ -41,7 +41,7 @@ class StorageTestMixin:
             field.storage = original_storage
 
 
-class override_storages(StorageTestMixin, TestContextDecorator):
+class override_storage(StorageTestMixin, TestContextDecorator):
 
     def __init__(self, storage_cls, attr_name=None, kwarg_name=None):
         self.test_storage_cls = storage_cls
@@ -58,4 +58,4 @@ class override_storages(StorageTestMixin, TestContextDecorator):
         self.teardown_storage()
 
 
-locmem_override_storages = override_storages(LocMemStorage)
+locmem_override_storage = override_storage(LocMemStorage)

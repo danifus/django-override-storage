@@ -19,17 +19,17 @@ class OverrideStorageTestCase(TestCase):
         return expected_path
 
     def test_context_manager(self):
-        with override_storage.locmem_override_storages:
+        with override_storage.locmem_override_storage:
             expected_path = self.save_file('test_context_mngr.txt', 'context_mngr')
         self.assertFalse(os.path.exists(expected_path))
 
-    @override_storage.locmem_override_storages
+    @override_storage.locmem_override_storage
     def test_method_decorator(self):
         expected_path = self.save_file('test_method_decorator.txt', 'method_decorator')
         self.assertFalse(os.path.exists(expected_path))
 
 
-@override_storage.locmem_override_storages
+@override_storage.locmem_override_storage
 class OverrideStorageClassTestCase(TestCase):
     def save_file(self, name, content):
         expected_path = original_storage.path(name)
