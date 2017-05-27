@@ -1,0 +1,7 @@
+build/
+*.pyc
+*.swp
+*.egg
+
+tests/media/**
+tests/test.db
