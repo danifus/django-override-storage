@@ -1,4 +1,5 @@
 import os
+import mock
 
 from django.core.files.base import ContentFile
 from django.test import TestCase
@@ -195,3 +196,15 @@ class StatsOverrideStorageClassNoAttrTestCase(TestCase):
     def test_class_decorator(self):
         expected_path = self.save_file('class_decorator.txt', 'class_decorator')
         self.assertFalse(os.path.exists(expected_path))
+
+
+class TearDownTestCase(TestCase):
+    def test_teardown(self):
+        class WeirdError(Exception):
+            pass
+        with mock.patch('override_storage.override_storage.setup_storage', side_effect=WeirdError()):
+            with self.assertRaises(WeirdError):
+                # Make sure it raises the real error and does the tear down
+                # without failing.
+                with override_storage.override_storage():
+                    pass

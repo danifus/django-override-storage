@@ -5,7 +5,7 @@ from django.db import models
 class StrictFNameFileSystemStorage(FileSystemStorage):
 
     def exists(self, name):
-        exists = super().exists(name)
+        exists = super(StrictFNameFileSystemStorage, self).exists(name)
         if exists:
             raise Exception("File '{}' already exists.".format(name))
         return False

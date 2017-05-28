@@ -7,11 +7,11 @@ from .utils import StorageTestMixin
 class StorageRunnerMixin(StorageTestMixin):
 
     def setup_test_environment(self):
-        super().setup_test_environment()
+        super(StorageRunnerMixin, self).setup_test_environment()
         self.setup_storage()
 
     def teardown_test_environment(self):
-        super().teardown_test_environment()
+        super(StorageRunnerMixin, self).teardown_test_environment()
         self.teardown_storage()
 
 

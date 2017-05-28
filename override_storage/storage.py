@@ -108,7 +108,7 @@ class StatsLocMemStorage(LocMemStorage):
     def __init__(self, field, stats):
         self.stats = stats
         self.field = field
-        super().__init__()
+        super(StatsLocMemStorage, self).__init__()
 
     def log_read(self, name):
         self.stats.log_read(self.field, name)
@@ -118,11 +118,11 @@ class StatsLocMemStorage(LocMemStorage):
 
     def _open(self, name,  mode='rb'):
         self.log_read(name)
-        return super()._open(name, mode)
+        return super(StatsLocMemStorage, self)._open(name, mode)
 
     def open_no_log(self, name,  mode='rb'):
-        return super()._open(name, mode)
+        return super(StatsLocMemStorage, self)._open(name, mode)
 
     def _save(self, name, content):
         self.log_save(name)
-        return super()._save(name, content)
+        return super(StatsLocMemStorage, self)._save(name, content)

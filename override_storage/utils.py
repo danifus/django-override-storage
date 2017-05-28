@@ -7,7 +7,7 @@ from django.test.utils import TestContextDecorator
 from .storage import LocMemStorage, StatsLocMemStorage
 
 
-class Stats:
+class Stats(object):
 
     read_cnt = 0
     save_cnt = 0
@@ -48,7 +48,7 @@ class Stats:
         return list(self.saves_by_field)
 
 
-class StorageTestMixin:
+class StorageTestMixin(object):
 
     test_storage = None
 
@@ -108,7 +108,10 @@ class StorageTestMixin:
             self.set_test_storage(field, **kwargs)
 
     def teardown_storage(self):
-        previous_storages = self.pop_storage_stack()
+        try:
+            previous_storages = self.pop_storage_stack()
+        except IndexError:
+            return
         for field, original_storage in previous_storages.items():
             field.storage = original_storage
 
@@ -137,7 +140,7 @@ class StatsStorageTestMixin(StorageTestMixin):
         # not a concern if you use a helper fn to create a new instance each
         # time (like in `locmem_override_storage`).
         stats = self.get_stats_cls()(**self.get_stats_cls_kwargs())
-        super().setup_storage(stats=stats)
+        super(StatsStorageTestMixin, self).setup_storage(stats=stats)
         return stats
 
 
