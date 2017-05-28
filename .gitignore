@@ -1,7 +1,9 @@
 build/
+dist/
+override_storage.egg-info
 *.pyc
 *.swp
 *.egg
 
-tests/media/**
+tests/media/
 tests/test.db
