@@ -15,7 +15,7 @@ class LocMemStorage(Storage):
 
     def __init__(self):
         params = {
-            'timeout': 24 * 60 * 60,
+            'timeout': None,
             'max_entries': 300,
         }
         self.cache = LocMemCache(name='test_storage', params=params)
@@ -102,3 +102,27 @@ class LocMemStorage(Storage):
         name. The datetime will be timezone-aware if USE_TZ=True.
         """
         return self.cache.get(name).time
+
+
+class StatsLocMemStorage(LocMemStorage):
+    def __init__(self, field, stats):
+        self.stats = stats
+        self.field = field
+        super().__init__()
+
+    def log_read(self, name):
+        self.stats.log_read(self.field, name)
+
+    def log_save(self, name):
+        self.stats.log_save(self.field, name)
+
+    def _open(self, name,  mode='rb'):
+        self.log_read(name)
+        return super()._open(name, mode)
+
+    def open_no_log(self, name,  mode='rb'):
+        return super()._open(name, mode)
+
+    def _save(self, name, content):
+        self.log_save(name)
+        return super()._save(name, content)

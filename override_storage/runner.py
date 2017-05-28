@@ -17,4 +17,4 @@ class StorageRunnerMixin(StorageTestMixin):
 
 class LocMemStorageDiscoverRunner(StorageRunnerMixin, DiscoverRunner):
 
-    test_storage_cls = LocMemStorage
+    test_storage = LocMemStorage()
