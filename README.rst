@@ -37,13 +37,13 @@ decorator, a method decorator or a context manager.
                 # Get your file back!
                 content = obj.upload_file.read()
 
-        @override_storage(LocMemStorage()):
+        @override_storage(LocMemStorage())
         def test_method_decorator(self):
             # You can also specify to replace all storage backends with a
             # storage instance of your choosing.
             ...
 
-        @override_storage():
+        @override_storage()
         def test_method_decorator(self):
             # Used as a method decorator.
             ...
@@ -76,7 +76,7 @@ Like ``override_storage``, ``locmem_stats_override_storage`` patches all
 ``FileField`` fields to store the contents of the file in an in-memory cache
 and returns the fields to their previous storages when leaving its context.
 
-In addition to the normal functionality it returns an object with information
+In addition to the normal functionality, it returns an object with information
 about the calls to the ``_open`` and ``_save`` methods of the test storage. In
 general it records which fields have had files read from or written to them and
 the names of the files are recorded.
