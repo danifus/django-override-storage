@@ -162,6 +162,19 @@ class StatsOverrideStorageTestCase(TestCase):
             # make sure accessing via stats doesn't increment the stats.
             self.assertEqual(storage.read_cnt, 0)
 
+    def test_get_file_contents_not_written(self):
+        fname = 'wrong_test.txt'
+        upload_file_field = SimpleModel._meta.get_field('upload_file')
+        with override_storage.locmem_stats_override_storage() as storage:
+            field_key = storage.get_full_field_name(upload_file_field)
+            with self.assertRaises(override_storage.StatsTestStorageError):
+                storage.get_content_file(field_key, fname)
+
+            obj = SimpleModel()
+            obj.upload_file.save('test.txt', ContentFile('content'))
+            with self.assertRaises(override_storage.StatsTestStorageError):
+                storage.get_content_file(field_key, fname)
+
 
 @override_storage.locmem_stats_override_storage('override_storage')
 class StatsOverrideStorageClassTestCase(TestCase):

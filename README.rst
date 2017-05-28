@@ -64,9 +64,6 @@ you may choose to define the Django test runner.
     TEST_RUNNER = 'override_storage.LocMemStorageDiscoverRunner'
 
 Modifying the test runner does not modify the testcase classes which are run.
-This means that the cache is not reset between tests as it is for the
-decorators or context manager. Use these other options if you expect the files
-written for the test suite to consume a lot of memory.
 
 
 Storage information

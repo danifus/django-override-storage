@@ -7,6 +7,10 @@ from django.test.utils import TestContextDecorator
 from .storage import LocMemStorage, StatsLocMemStorage
 
 
+class StatsTestStorageError(Exception):
+    pass
+
+
 class Stats(object):
 
     read_cnt = 0
@@ -33,6 +37,20 @@ class Stats(object):
         self.saves_by_field[self.get_full_field_name(field)] = fname
 
     def _get_content_file(self, app_label, model_name, field_name, fname):
+        try:
+            saved_files = self.saves_by_field[(app_label, model_name, field_name)]
+        except KeyError:
+            raise StatsTestStorageError(
+                "{}.{}.{} has not been written to yet so there is nothing to read.".format(
+                    app_label, model_name, field_name))
+
+        if fname not in saved_files:
+            raise StatsTestStorageError(
+                "{}.{}.{} has not had a file named '{}' written to it. "
+                "Be careful - the storage engine may have added some random "
+                "characters to the name before attempting to write.".format(
+                    app_label, model_name, field_name, fname))
+
         field = apps.get_model(app_label, model_name)._meta.get_field(field_name)
         return field.storage.open_no_log(fname)
 
