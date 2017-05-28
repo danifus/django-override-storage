@@ -96,7 +96,7 @@ the names of the files are recorded.
             with locmem_stats_override_storage() as storage_stats:
                 # All files saved to in memory cache.
                 obj = SimpleModel()
-                obj.upload_file.save(name, ContentFile(content))
+                obj.upload_file.save('test.txt', ContentFile('content'))
 
                 # Check how many files have been saved
                 self.storage_stats.save_cnt
