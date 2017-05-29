@@ -1,4 +1,6 @@
 from collections import defaultdict
+from inspect import isclass
+
 from django.apps import apps
 from django.db.models import FileField
 from django.utils.functional import cached_property
@@ -108,6 +110,8 @@ class StorageTestMixin(object):
         """
         This implementation returns an instance of a storage enigne.
         """
+        if isclass(self.test_storage):
+            return self.test_storage(**kwargs)
         return self.test_storage
 
     def set_test_storage(self, field, **kwargs):
@@ -140,7 +144,6 @@ class StatsStorageTestMixin(StorageTestMixin):
     field it is saving the file. As this the storage engine doesn't normally
     have that information, using this class requires special storage engines.
     """
-    test_storage_cls = None
 
     def get_stats_cls(self):
         return Stats
@@ -149,7 +152,7 @@ class StatsStorageTestMixin(StorageTestMixin):
         return {}
 
     def get_test_storage(self, field, **kwargs):
-        return self.test_storage_cls(field, kwargs['stats'])
+        return self.test_storage_cls(field, **kwargs)
 
     def setup_storage(self):
         # Depending on how an instance from this class is setup, it is possible
@@ -181,7 +184,7 @@ class override_storage(StorageTestMixin, StorageTestContextDecoratorBase):
 
     def __init__(self, storage=None):
         if storage is None:
-            storage = LocMemStorage()
+            storage = LocMemStorage
 
         self.test_storage = storage
 

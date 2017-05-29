@@ -6,6 +6,7 @@ from django.test import TestCase
 
 from .models import SimpleModel
 from .context import override_storage
+from .context import storage
 
 
 original_storage = SimpleModel._meta.get_field('upload_file').storage
@@ -221,3 +222,33 @@ class TearDownTestCase(TestCase):
                 # without failing.
                 with override_storage.override_storage():
                     pass
+
+
+@override_storage.override_storage()
+class NoPersistenceTestCase(TestCase):
+
+    def assertNoRecords(self):
+        test_storage = SimpleModel._meta.get_field('upload_file').storage
+        self.assertEqual(len(test_storage.cache._cache), 0)
+
+    def test_persistence_1(self):
+        self.assertNoRecords()
+        obj = SimpleModel()
+        obj.upload_file.save('test_1', ContentFile('content'))
+
+    def test_persistence_2(self):
+        self.assertNoRecords()
+        obj = SimpleModel()
+        obj.upload_file.save('test_2', ContentFile('content'))
+
+
+@override_storage.override_storage()
+class NoCullTestCase(TestCase):
+
+    def test_no_cull(self):
+        cache = storage.PrivateLocMemCache()
+        for i in range(cache._max_entries + 1):
+            cache.add(i, i)
+
+        cache._cull()
+        self.assertEqual(len(cache._cache), cache._max_entries + 1)

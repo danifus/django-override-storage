@@ -4,21 +4,32 @@ from django.core.cache.backends.locmem import LocMemCache
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
+from django.utils.synch import RWLock
 from django.utils.timezone import now
 
 
 FakeContent = namedtuple('FakeContent', ['content', 'time'])
 
 
+class PrivateLocMemCache(LocMemCache):
+
+    def __init__(self):
+        super(LocMemCache, self).__init__(params={})
+        self._cache = {}
+        self._expire_info = {}
+        self._lock = RWLock()
+
+    def _cull(self):
+        # No culling. I would prefer you run out of memory than try and debug
+        # strange test behaviour due to cache eviction.
+        pass
+
+
 @deconstructible
 class LocMemStorage(Storage):
 
     def __init__(self):
-        params = {
-            'timeout': None,
-            'max_entries': 300,
-        }
-        self.cache = LocMemCache(name='test_storage', params=params)
+        self.cache = PrivateLocMemCache()
 
     def _open(self, name, mode='rb'):
         if 'w' in mode:
