@@ -70,7 +70,8 @@ class Stats(object):
 
 class StorageTestMixin(object):
 
-    test_storage = None
+    storage = None
+    storage_cls = None
 
     @cached_property
     def storage_stack(self):
@@ -106,28 +107,33 @@ class StorageTestMixin(object):
 
         return filefields
 
-    def get_test_storage(self, field, **kwargs):
+    def get_storage_cls_kwargs(self, field):
+        if self.storage_cls_kwargs:
+            return self.storage_cls_kwargs
+        return {}
+
+    def get_storage(self, field):
         """
         This implementation returns an instance of a storage enigne.
         """
-        if isclass(self.test_storage):
-            return self.test_storage(**kwargs)
-        return self.test_storage
+        if self.storage_cls is not None:
+            return self.storage_cls(**self.get_storage_cls_kwargs(field))
+        return self.storage
 
-    def set_test_storage(self, field, **kwargs):
+    def set_storage(self, field):
         if not hasattr(field, '_original_storage'):
             # Set an attribute on the field so that other StorageTestMixin
             # classes can filter on the original storage class (in a custom
             # `filefields` implementation), if they want to.
             field._original_storage = field.storage
-        field.storage = self.get_test_storage(field, **kwargs)
+        field.storage = self.get_storage(field)
 
-    def setup_storage(self, **kwargs):
+    def setup_storage(self):
 
         previous_storages = self.push_storage_stack()
         for field in self.filefields:
             previous_storages[field] = field.storage
-            self.set_test_storage(field, **kwargs)
+            self.set_storage(field)
 
     def teardown_storage(self):
         try:
@@ -144,24 +150,44 @@ class StatsStorageTestMixin(StorageTestMixin):
     field it is saving the file. As this the storage engine doesn't normally
     have that information, using this class requires special storage engines.
     """
-
-    def get_stats_cls(self):
-        return Stats
+    stats_cls = None
 
     def get_stats_cls_kwargs(self):
         return {}
 
-    def get_test_storage(self, field, **kwargs):
-        return self.test_storage_cls(field, **kwargs)
+    def _create_stats_obj(self):
+        """
+        Create the stats object.
+
+        There should only be one stats object created per setUp/tearDown cycle.
+        In other words, only call this method in setup_storage() and use
+        get the stats object via the stats_obj attribute.
+        """
+        self.stats_obj = self.stats_cls(**self.get_stats_cls_kwargs())
+        return self.stats_obj
+
+    def get_stats_obj(self):
+        return self.stats_obj
+
+    def get_storage_cls_kwargs(self, field):
+        kwargs = super(StatsStorageTestMixin, self).get_storage_cls_kwargs(field)
+        kwargs.update({
+            'stats': self.stats_obj,
+            'field': field,
+        })
+        return kwargs
 
     def setup_storage(self):
         # Depending on how an instance from this class is setup, it is possible
-        # that there will only be one instance for all tests (and therefore we
-        # should be creating a new `stats` object in here each time). This is
-        # not a concern if you use a helper fn to create a new instance each
-        # time (like in `locmem_override_storage`).
-        stats = self.get_stats_cls()(**self.get_stats_cls_kwargs())
-        super(StatsStorageTestMixin, self).setup_storage(stats=stats)
+        # that one instance will be used for all test. Creating a new `stats`
+        # object on setup allows the stats to be reset between tests even if
+        # this instance derived from the `StatsStorageTestMixin` persists
+        # across all setup and teardowns. This is not a concern if you use a
+        # helper fn to create a new `StatsStorageTestMixin` instance each
+        # time (like in `locmem_stats_override_storage`).
+
+        stats = self._create_stats_obj()
+        super(StatsStorageTestMixin, self).setup_storage()
         return stats
 
 
@@ -182,21 +208,37 @@ class override_storage(StorageTestMixin, StorageTestContextDecoratorBase):
     attr_name = None
     kwarg_name = None
 
-    def __init__(self, storage=None):
-        if storage is None:
-            storage = LocMemStorage
+    def __init__(self, storage_cls_or_obj=None, storage_cls_kwargs=None):
+        if storage_cls_or_obj is None:
+            self.storage_cls = LocMemStorage
+        else:
+            if isclass(storage_cls_or_obj):
+                self.storage_cls = storage_cls_or_obj
+            else:
+                self.storage = storage_cls_or_obj
 
-        self.test_storage = storage
+        self.storage_cls_kwargs = storage_cls_kwargs
 
 
 class stats_override_storage(StatsStorageTestMixin, StorageTestContextDecoratorBase):
 
-    def __init__(self, storage_cls, kwarg_attr_name=None):
+    stats_cls = Stats
+    attr_name = None
+    kwarg_name = None
 
-        self.attr_name = kwarg_attr_name
-        self.kwarg_name = kwarg_attr_name
-        self.test_storage_cls = storage_cls
+    def __init__(self, storage_cls=None, kwarg_attr_name=None,
+                 storage_cls_kwargs=None):
+
+        if storage_cls is None:
+            storage_cls = StatsLocMemStorage
+        self.storage_cls = storage_cls
+
+        self.storage_cls_kwargs = storage_cls_kwargs
+
+        if kwarg_attr_name is not None:
+            self.attr_name = kwarg_attr_name
+            self.kwarg_name = kwarg_attr_name
 
 
 def locmem_stats_override_storage(kwarg_attr_name=None):
-    return stats_override_storage(StatsLocMemStorage, kwarg_attr_name)
+    return stats_override_storage(kwarg_attr_name=kwarg_attr_name)
