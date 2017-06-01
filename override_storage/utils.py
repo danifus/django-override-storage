@@ -72,6 +72,7 @@ class StorageTestMixin(object):
 
     storage = None
     storage_cls = None
+    storage_per_field = False
 
     @cached_property
     def storage_stack(self):
@@ -112,13 +113,16 @@ class StorageTestMixin(object):
             return self.storage_cls_kwargs
         return {}
 
+    def get_storage_from_cls(self, field):
+        return self.storage_cls(**self.get_storage_cls_kwargs(field))
+
     def get_storage(self, field):
         """
         This implementation returns an instance of a storage enigne.
         """
-        if self.storage_cls is not None:
-            return self.storage_cls(**self.get_storage_cls_kwargs(field))
-        return self.storage
+        if self.storage is not None:
+            return self.storage
+        return self.get_storage_from_cls(field)
 
     def set_storage(self, field):
         if not hasattr(field, '_original_storage'):
@@ -208,7 +212,8 @@ class override_storage(StorageTestMixin, StorageTestContextDecoratorBase):
     attr_name = None
     kwarg_name = None
 
-    def __init__(self, storage_cls_or_obj=None, storage_cls_kwargs=None):
+    def __init__(self, storage_cls_or_obj=None, storage_cls_kwargs=None,
+                 storage_per_field=False):
         if storage_cls_or_obj is None:
             self.storage_cls = LocMemStorage
         else:
@@ -218,6 +223,12 @@ class override_storage(StorageTestMixin, StorageTestContextDecoratorBase):
                 self.storage = storage_cls_or_obj
 
         self.storage_cls_kwargs = storage_cls_kwargs
+        self.storage_per_field = storage_per_field
+
+    def setup_storage(self):
+        if self.storage_cls is not None and not self.storage_per_field:
+            self.storage = self.get_storage_from_cls(field=None)
+        super(override_storage, self).setup_storage()
 
 
 class stats_override_storage(StatsStorageTestMixin, StorageTestContextDecoratorBase):
