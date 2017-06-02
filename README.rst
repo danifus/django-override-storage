@@ -7,6 +7,14 @@ This project provides tools to help you reduce the side effects of using
 FileFields during tests.
 
 
+Installation
+------------
+
+.. code-block:: bash
+
+    pip install django-override-storage
+
+
 Simple Usage
 ------------
 Calling ``override_storage()`` without any arguments will patch all
