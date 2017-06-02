@@ -42,7 +42,7 @@ class LocMemStorage(Storage):
 
     def _open(self, name, mode='rb'):
         if 'w' in mode:
-            raise Exception('Oh Geez...')
+            raise NotImplementedError("This test backend doesn't support opening a file for writing.")
         return ContentFile(self.cache.get(name).content)
 
     def _save(self, name, content):
@@ -56,8 +56,6 @@ class LocMemStorage(Storage):
         self.cache.add(name, FakeContent(content, now()))
         return name
 
-    # These methods are part of the public API, with default implementations.
-
     def path(self, name):
         """
         Return a local filesystem path where the file can be retrieved using
@@ -65,9 +63,6 @@ class LocMemStorage(Storage):
         accessed using open() should *not* implement this method.
         """
         raise NotImplementedError("This backend doesn't support absolute paths.")
-
-    # The following methods form the public API for storage systems, but with
-    # no default implementations. Subclasses must implement *all* of these.
 
     def delete(self, name):
         """
