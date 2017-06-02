@@ -4,7 +4,7 @@ from inspect import isclass
 from django.apps import apps
 from django.db.models import FileField
 from django.utils.functional import cached_property
-from django.test.utils import TestContextDecorator
+from .compat import TestContextDecorator
 
 from .storage import LocMemStorage, StatsLocMemStorage
 
