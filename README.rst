@@ -51,8 +51,7 @@ decorator, a method decorator or a context manager.
 
         @override_storage(LocMemStorage)
         def test_method_decorator(self):
-            # Passing in a class will create a new instance for every field,
-            # for every test.
+            # Passing in a class will create a new instance for every test.
 
         @override_storage()
         def test_method_decorator(self):
@@ -81,8 +80,6 @@ tests, if you write a lot of big files, you may run out of memory.
 .. code-block:: python
 
     TEST_RUNNER = 'override_storage.LocMemStorageDiscoverRunner'
-
-Modifying the test runner does not modify the testcase classes which are run.
 
 
 Storage information
@@ -121,8 +118,7 @@ the names of the files are recorded.
                 self.storage_stats.fields_saved
                 self.storage_stats.fields_read
 
-                # Get a list of names, by field, which have been saved or
-                # read.
+                # Get a list of names, by field, which have been saved or read.
                 self.storage_stats.reads_by_field
                 self.storage_stats.saves_by_field
 
