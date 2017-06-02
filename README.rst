@@ -9,9 +9,11 @@ FileFields during tests.
 
 Simple Usage
 ------------
-``override_storage`` patches all ``FileField`` fields to store the contents of
-the file in an in-memory cache and returns the fields to their previous
-storages when leaving its context.
+Calling ``override_storage()`` without any arguments will patch all
+``FileField`` fields to store the contents of the file in an in-memory cache
+and returns the fields to their previous storages when leaving its context. The
+storage cache is deleted at the end of each test or when exiting the context
+manager depending on how it is called.
 
 It can be used similarly to ``django.test.utils.override_settings``: as a class
 decorator, a method decorator or a context manager.
@@ -40,8 +42,17 @@ decorator, a method decorator or a context manager.
         @override_storage(LocMemStorage())
         def test_method_decorator(self):
             # You can also specify to replace all storage backends with a
-            # storage instance of your choosing.
+            # storage instance of your choosing. Depending on the storage type,
+            # this could mean all writes will persist for the life of the
+            # instance. This does not really matter if you wanted to pass in a
+            # FileSystemStorage instance as those writes will be persisted
+            # regardless.
             ...
+
+        @override_storage(LocMemStorage)
+        def test_method_decorator(self):
+            # Passing in a class will create a new instance for every field,
+            # for every test.
 
         @override_storage()
         def test_method_decorator(self):
@@ -58,6 +69,14 @@ decorator, a method decorator or a context manager.
 It can also be used globally through a custom test runner. This can be achieved
 by setting the ``TEST_RUNNER`` setting in your settings file or however else
 you may choose to define the Django test runner.
+
+**Warning**
+
+``TEST_RUNNER`` only sets up the replacement storage once at the start of the
+tests as there are no hooks into the ``setUp`` / ``tearDown`` methods of the
+test class. Using ``override_storage.LocMemStorageDiscoverRunner`` will share a
+single in memory cache across all tests. While this shouldn't affect your
+tests, if you write a lot of big files, you may run out of memory.
 
 .. code-block:: python
 
