@@ -1,6 +1,6 @@
 build/
 dist/
-override_storage.egg-info
+django_override_storage.egg-info
 *.pyc
 *.swp
 *.egg
