@@ -1,6 +1,5 @@
 from collections import namedtuple
 
-from django.core.cache.backends.locmem import LocMemCache
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
@@ -11,34 +10,12 @@ from django.utils.timezone import now
 FakeContent = namedtuple('FakeContent', ['content', 'time'])
 
 
-class PrivateLocMemCache(LocMemCache):
-
-    allow_cull = False
-
-    def __init__(self, cache_params=None):
-        if cache_params is None:
-            cache_params = {}
-        else:
-            self.allow_cull = cache_params.pop('allow_cull', self.allow_cull)
-
-        super(LocMemCache, self).__init__(params=cache_params)
-        self._cache = {}
-        self._expire_info = {}
-        self._lock = RWLock()
-
-    def _cull(self):
-        # No culling. I would prefer you run out of memory than try and debug
-        # strange test behaviour due to cache eviction. You can turn it on and
-        # set the params for the cache if you would like.
-        if self.allow_cull:
-            super(PrivateLocMemCache, self)._cull()
-
-
 @deconstructible
 class LocMemStorage(Storage):
 
     def __init__(self, cache_params=None):
-        self.cache = PrivateLocMemCache(cache_params)
+        self.cache = {}
+        self._lock = RWLock()
 
     def _open(self, name, mode='rb'):
         if 'w' in mode:
@@ -53,7 +30,10 @@ class LocMemStorage(Storage):
             content = content.encode()
         except AttributeError:
             pass
-        self.cache.add(name, FakeContent(content, now()))
+        with self._lock.writer():
+            while name in self.cache:
+                name = self.get_available_name(name)
+            self.cache[name] = FakeContent(content, now())
         return name
 
     def path(self, name):
