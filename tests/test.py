@@ -34,7 +34,7 @@ class OverrideStorageTestCase(TestCase):
         return expected_path
 
     def test_context_manager(self):
-        with override_storage.override_storage(override_storage.LocMemStorage()):
+        with override_storage.override_storage(storage_cls_or_obj=override_storage.LocMemStorage()):
             expected_path = self.save_file('test_context_mngr.txt', 'context_mngr')
         self.assertFalse(os.path.exists(expected_path))
 
@@ -42,7 +42,7 @@ class OverrideStorageTestCase(TestCase):
         storage = override_storage.LocMemStorage()
         upload_file_field = SimpleModel._meta.get_field('upload_file')
         original_storage = upload_file_field.storage
-        with override_storage.override_storage(storage):
+        with override_storage.override_storage(storage_cls_or_obj=storage):
             self.assertEqual(upload_file_field.storage, storage)
         self.assertEqual(upload_file_field.storage, original_storage)
 
@@ -58,6 +58,13 @@ class OverrideStorageTestCase(TestCase):
         self.assertFalse(os.path.exists(expected_path))
         self.assertEqual(content, read_content)
 
+    def test_method_decorator_with_no_parens_raises_error(self):
+        """Using override_storage fails as a decorator with no parens."""
+        with self.assertRaises(override_storage.TestStorageError):
+            @override_storage.override_storage
+            def fake_fn():
+                pass
+
     @override_storage.override_storage()
     def test_method_decorator_no_kwarg(self):
         expected_path = self.save_file('test_method_decorator.txt', 'method_decorator')
@@ -68,10 +75,10 @@ class OverrideStorageTestCase(TestCase):
         original_storage = upload_file_field.storage
         outer_storage = override_storage.LocMemStorage()
         inner_storage = override_storage.LocMemStorage()
-        with override_storage.override_storage(outer_storage):
+        with override_storage.override_storage(storage_cls_or_obj=outer_storage):
             self.assertEqual(upload_file_field.storage, outer_storage)
 
-            with override_storage.override_storage(inner_storage):
+            with override_storage.override_storage(storage_cls_or_obj=inner_storage):
                 self.assertEqual(upload_file_field.storage, inner_storage)
 
             self.assertEqual(upload_file_field.storage, outer_storage)
@@ -91,17 +98,24 @@ class StatsOverrideStorageTestCase(TestCase):
             expected_path = self.save_file('test_context_mngr.txt', 'context_mngr')
         self.assertFalse(os.path.exists(expected_path))
 
-    @override_storage.locmem_stats_override_storage('override_storage')
-    def test_method_decorator(self, override_storage):
-        self.assertEqual(override_storage.save_cnt, 0)
+    @override_storage.locmem_stats_override_storage(name='override_storage_field')
+    def test_method_decorator(self, override_storage_field):
+        self.assertEqual(override_storage_field.save_cnt, 0)
         expected_path = self.save_file('test_method_decorator.txt', 'method_decorator')
         self.assertFalse(os.path.exists(expected_path))
-        self.assertEqual(override_storage.save_cnt, 1)
+        self.assertEqual(override_storage_field.save_cnt, 1)
 
     @override_storage.locmem_stats_override_storage()
     def test_method_decorator_no_kwarg(self):
         expected_path = self.save_file('test_method_decorator.txt', 'method_decorator')
         self.assertFalse(os.path.exists(expected_path))
+
+    def test_method_decorator_with_no_parens_raises_error(self):
+        """Using locmem_stats_override_storage fails as a decorator with no parens."""
+        with self.assertRaises(override_storage.TestStorageError):
+            @override_storage.locmem_stats_override_storage
+            def fake_fn():
+                pass
 
     def test_nested_overrides(self):
 
@@ -176,10 +190,10 @@ class StatsOverrideStorageTestCase(TestCase):
                 storage.get_content_file(field_key, fname)
 
 
-@override_storage.locmem_stats_override_storage('override_storage')
+@override_storage.locmem_stats_override_storage(name='override_storage_field')
 class StatsOverrideStorageClassTestCase(TestCase):
 
-    override_storage = None
+    override_storage_field = None
 
     def save_file(self, name, content):
         expected_path = original_storage.path(name)
@@ -192,9 +206,9 @@ class StatsOverrideStorageClassTestCase(TestCase):
         self.assertFalse(os.path.exists(expected_path))
 
     def test_class_decorator_attr_name(self):
-        self.assertEqual(self.override_storage.save_cnt, 0)
+        self.assertEqual(self.override_storage_field.save_cnt, 0)
         self.save_file('class_decorator.txt', 'class_decorator')
-        self.assertEqual(self.override_storage.save_cnt, 1)
+        self.assertEqual(self.override_storage_field.save_cnt, 1)
 
 
 @override_storage.locmem_stats_override_storage()

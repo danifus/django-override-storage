@@ -47,7 +47,7 @@ decorator, a method decorator or a context manager.
                 # Get your file back!
                 content = obj.upload_file.read()
 
-        @override_storage(LocMemStorage())
+        @override_storage(storage_cls_or_obj=LocMemStorage())
         def test_method_decorator(self):
             # You can also specify to replace all storage backends with a
             # storage instance of your choosing. Depending on the storage type,
@@ -57,7 +57,7 @@ decorator, a method decorator or a context manager.
             # regardless.
             ...
 
-        @override_storage(LocMemStorage)
+        @override_storage(storage_cls_or_obj=LocMemStorage)
         def test_method_decorator(self):
             # Passing in a class will create a new instance for every test.
 
@@ -133,13 +133,13 @@ the names of the files are recorded.
                 # Get your file back!
                 content = obj.upload_file.read()
 
-        @locmem_stats_override_storage('storage_stats')
+        @locmem_stats_override_storage(name='storage_stats')
         def test_method_decorator(self, storage_stats):
             # access to storage stats by specifying kwarg
             ...
 
 
-    @locmem_stats_override_storage('storage_stats')
+    @locmem_stats_override_storage(name='storage_stats')
     class OverrideStorageClassTestCase(TestCase):
         storage_stats = None
 

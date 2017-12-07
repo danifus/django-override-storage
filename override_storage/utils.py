@@ -9,6 +9,10 @@ from .compat import TestContextDecorator
 from .storage import LocMemStorage, StatsLocMemStorage
 
 
+class TestStorageError(Exception):
+    pass
+
+
 class StatsTestStorageError(Exception):
     pass
 
@@ -196,6 +200,34 @@ class StatsStorageTestMixin(StorageTestMixin):
 
 
 class StorageTestContextDecoratorBase(TestContextDecorator):
+    def __init__(self, unused_arg=None, **kwargs):
+        """Inits class with check for correct calling patterns.
+
+        Subclasses should also declare unused_arg as their first argument.
+        This defends against passing the function to be wrapped as the first
+        arg to this init method rather than as the first argument to the
+        resulting instance, which does act like a decorator.
+
+        Failing to do this can result in undesired behaviour, such as not
+        executing the wrapped function at all.
+
+        eg.
+        - Proper usage with parenthesis on the decorator:
+            @subclass()
+            def wrapped_fn():
+                pass
+
+        - Incorrect usage without parenthesis. Exception will be raised:
+            @subclass
+            def wrapped_fn():
+                pass
+        """
+        if unused_arg is not None:
+            raise TestStorageError(
+                'Incorrect usage: Positional arguments, calling as a decorator '
+                'without parenthesis and specifying the `unused_arg` keyword '
+                'are not supported.')
+
     def enable(self):
         try:
             return self.setup_storage()
@@ -212,8 +244,10 @@ class override_storage(StorageTestMixin, StorageTestContextDecoratorBase):
     attr_name = None
     kwarg_name = None
 
-    def __init__(self, storage_cls_or_obj=None, storage_cls_kwargs=None,
-                 storage_per_field=False):
+    def __init__(self, unused_arg=None, storage_cls_or_obj=None,
+                 storage_cls_kwargs=None, storage_per_field=False):
+        super(override_storage, self).__init__(unused_arg)
+
         if storage_cls_or_obj is None:
             self.storage_cls = LocMemStorage
         else:
@@ -237,8 +271,10 @@ class stats_override_storage(StatsStorageTestMixin, StorageTestContextDecoratorB
     attr_name = None
     kwarg_name = None
 
-    def __init__(self, storage_cls=None, kwarg_attr_name=None,
+    def __init__(self, unused_arg=None, storage_cls=None, name=None,
                  storage_cls_kwargs=None):
+
+        super(stats_override_storage, self).__init__(unused_arg)
 
         if storage_cls is None:
             storage_cls = StatsLocMemStorage
@@ -246,10 +282,10 @@ class stats_override_storage(StatsStorageTestMixin, StorageTestContextDecoratorB
 
         self.storage_cls_kwargs = storage_cls_kwargs
 
-        if kwarg_attr_name is not None:
-            self.attr_name = kwarg_attr_name
-            self.kwarg_name = kwarg_attr_name
+        if name is not None:
+            self.attr_name = name
+            self.kwarg_name = name
 
 
-def locmem_stats_override_storage(kwarg_attr_name=None):
-    return stats_override_storage(kwarg_attr_name=kwarg_attr_name)
+def locmem_stats_override_storage(unused_arg=None, name=None):
+    return stats_override_storage(unused_arg, name=name)
