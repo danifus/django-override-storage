@@ -11,7 +11,7 @@ with open('LICENSE') as f:
 
 setup(
     name='django-override-storage',
-    version='0.1.1',
+    version='0.1.2',
     description='Django test helpers to manage file storage side effects.',
     long_description=readme,
     author='Daniel Hillier',
@@ -27,6 +27,7 @@ setup(
         'Framework :: Django :: 1.9',
         'Framework :: Django :: 1.10',
         'Framework :: Django :: 1.11',
+        'Framework :: Django :: 2.0',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
