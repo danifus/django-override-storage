@@ -1,5 +1,5 @@
+import warnings
 from collections import defaultdict
-from inspect import isclass
 
 from django.apps import apps
 from django.db.models import FileField
@@ -75,7 +75,7 @@ class Stats(object):
 class StorageTestMixin(object):
 
     storage = None
-    storage_cls = None
+    storage_callable = None
     storage_per_field = False
 
     @cached_property
@@ -112,13 +112,13 @@ class StorageTestMixin(object):
 
         return filefields
 
-    def get_storage_cls_kwargs(self, field):
-        if self.storage_cls_kwargs:
-            return self.storage_cls_kwargs
+    def get_storage_kwargs(self, field):
+        if self.storage_kwargs:
+            return self.storage_kwargs
         return {}
 
-    def get_storage_from_cls(self, field):
-        return self.storage_cls(**self.get_storage_cls_kwargs(field))
+    def get_storage_from_callable(self, field):
+        return self.storage_callable(**self.get_storage_kwargs(field))
 
     def get_storage(self, field):
         """
@@ -126,7 +126,7 @@ class StorageTestMixin(object):
         """
         if self.storage is not None:
             return self.storage
-        return self.get_storage_from_cls(field)
+        return self.get_storage_from_callable(field)
 
     def set_storage(self, field):
         if not hasattr(field, '_original_storage'):
@@ -137,6 +137,7 @@ class StorageTestMixin(object):
         field.storage = self.get_storage(field)
 
     def setup_storage(self):
+        """Save existing FileField storages and patch them with test instance(s)."""
 
         previous_storages = self.push_storage_stack()
         for field in self.filefields:
@@ -177,8 +178,8 @@ class StatsStorageTestMixin(StorageTestMixin):
     def get_stats_obj(self):
         return self.stats_obj
 
-    def get_storage_cls_kwargs(self, field):
-        kwargs = super(StatsStorageTestMixin, self).get_storage_cls_kwargs(field)
+    def get_storage_kwargs(self, field):
+        kwargs = super(StatsStorageTestMixin, self).get_storage_kwargs(field)
         kwargs.update({
             'stats': self.stats_obj,
             'field': field,
@@ -244,24 +245,69 @@ class override_storage(StorageTestMixin, StorageTestContextDecoratorBase):
     attr_name = None
     kwarg_name = None
 
-    def __init__(self, unused_arg=None, storage_cls_or_obj=None,
-                 storage_cls_kwargs=None, storage_per_field=False):
+    def __init__(self, unused_arg=None, storage=None,
+                 storage_kwargs=None, storage_per_field=False,
+                 storage_cls_or_obj=None, storage_cls_kwargs=None):
+        """Return an object to override the storage engines of FileFields.
+
+        Instance can be used as a decorator or context manager.
+
+        Args:
+            unused_arg: If anything apart from None, an error will be raised.
+                Defends against accidental misuse as a decorator.
+            storage (optional): storage instance or callable that returns a
+                storage instance. LocMemStorage by default.
+            storage_kwargs (optional): kwargs passed to storage if storage is
+                callable.
+            storage_per_field (optional): When storage is callable, if False
+                (default), use one result from the callable to replace all
+                FileField fields. If True and storage is callable, replace
+                every FileField with a different call to the storage callable.
+        """
         super(override_storage, self).__init__(unused_arg)
 
-        if storage_cls_or_obj is None:
-            self.storage_cls = LocMemStorage
-        else:
-            if isclass(storage_cls_or_obj):
-                self.storage_cls = storage_cls_or_obj
-            else:
-                self.storage = storage_cls_or_obj
+        if storage_cls_or_obj is not None:
+            warnings.warn(
+                'storage_cls_or_obj is deprecated. Use storage instead.',
+                DeprecationWarning)
+            if storage is not None:
+                raise TestStorageError(
+                    'storage_cls_or_obj is deprecated and was specified with '
+                    'as well as storage. Only use storage.')
+            storage = storage_cls_or_obj
 
-        self.storage_cls_kwargs = storage_cls_kwargs
+        if storage_cls_kwargs is not None:
+            warnings.warn(
+                'storage_cls_kwargs is deprecated. Use storage_kwargs instead.',
+                DeprecationWarning)
+            if storage_kwargs is not None:
+                raise TestStorageError(
+                    'storage_cls_kwargs is deprecated and was specified with '
+                    'as well as storage_kwargs. Only use storage_kwargs.')
+            storage_kwargs = storage_cls_kwargs
+
+        if storage is None:
+            self.storage_callable = LocMemStorage
+        else:
+            if hasattr(storage, '__call__'):
+                self.storage_callable = storage
+            else:
+                self.storage = storage
+
+        self.storage_kwargs = storage_kwargs
         self.storage_per_field = storage_per_field
 
     def setup_storage(self):
-        if self.storage_cls is not None and not self.storage_per_field:
-            self.storage = self.get_storage_from_cls(field=None)
+        """Save existing FileField storages and patch them with test instance(s).
+
+        If storage_per_field is False (default) this function will create a
+        single instance here and assign it to self.storage to be used for all
+        filefields.
+        If storage_per_field is True, an independent storage instance will be
+        used for each FileField .
+        """
+        if self.storage_callable is not None and not self.storage_per_field:
+            self.storage = self.get_storage_from_callable(field=None)
         super(override_storage, self).setup_storage()
 
 
@@ -271,16 +317,17 @@ class stats_override_storage(StatsStorageTestMixin, StorageTestContextDecoratorB
     attr_name = None
     kwarg_name = None
 
-    def __init__(self, unused_arg=None, storage_cls=None, name=None,
-                 storage_cls_kwargs=None):
+    def __init__(self, unused_arg=None, storage=None, storage_kwargs=None,
+                 name=None):
 
         super(stats_override_storage, self).__init__(unused_arg)
 
-        if storage_cls is None:
-            storage_cls = StatsLocMemStorage
-        self.storage_cls = storage_cls
+        if storage is None:
+            self.storage_callable = StatsLocMemStorage
+        else:
+            self.storage_callable = storage
 
-        self.storage_cls_kwargs = storage_cls_kwargs
+        self.storage_kwargs = storage_kwargs
 
         if name is not None:
             self.attr_name = name

@@ -1,0 +1,6 @@
+0.12
+- Fix #1 bug with using override_storage and locmem_stats_override_storage as
+  decorators without parenthesis.
+- Change override_storage and locmem_stats_override_storage kwarg names
+  to be more concise now they will be used more often after the fix of #1
+  (and internal attribute names to match).

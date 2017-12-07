@@ -34,7 +34,7 @@ class OverrideStorageTestCase(TestCase):
         return expected_path
 
     def test_context_manager(self):
-        with override_storage.override_storage(storage_cls_or_obj=override_storage.LocMemStorage()):
+        with override_storage.override_storage(storage=override_storage.LocMemStorage()):
             expected_path = self.save_file('test_context_mngr.txt', 'context_mngr')
         self.assertFalse(os.path.exists(expected_path))
 
@@ -42,7 +42,7 @@ class OverrideStorageTestCase(TestCase):
         storage = override_storage.LocMemStorage()
         upload_file_field = SimpleModel._meta.get_field('upload_file')
         original_storage = upload_file_field.storage
-        with override_storage.override_storage(storage_cls_or_obj=storage):
+        with override_storage.override_storage(storage=storage):
             self.assertEqual(upload_file_field.storage, storage)
         self.assertEqual(upload_file_field.storage, original_storage)
 
@@ -75,10 +75,10 @@ class OverrideStorageTestCase(TestCase):
         original_storage = upload_file_field.storage
         outer_storage = override_storage.LocMemStorage()
         inner_storage = override_storage.LocMemStorage()
-        with override_storage.override_storage(storage_cls_or_obj=outer_storage):
+        with override_storage.override_storage(storage=outer_storage):
             self.assertEqual(upload_file_field.storage, outer_storage)
 
-            with override_storage.override_storage(storage_cls_or_obj=inner_storage):
+            with override_storage.override_storage(storage=inner_storage):
                 self.assertEqual(upload_file_field.storage, inner_storage)
 
             self.assertEqual(upload_file_field.storage, outer_storage)
