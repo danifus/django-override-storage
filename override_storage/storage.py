@@ -1,9 +1,9 @@
 from collections import namedtuple
+from threading import RLock
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
-from django.utils.synch import RWLock
 from django.utils.timezone import now
 
 
@@ -15,12 +15,13 @@ class LocMemStorage(Storage):
 
     def __init__(self, cache_params=None):
         self.cache = {}
-        self._lock = RWLock()
+        self._lock = RLock()
 
     def _open(self, name, mode='rb'):
         if 'w' in mode:
             raise NotImplementedError("This test backend doesn't support opening a file for writing.")
-        return ContentFile(self.cache.get(name).content)
+        with self._lock:
+            return ContentFile(self.cache.get(name).content)
 
     def _save(self, name, content):
         # Make sure that the cache stores the file as bytes, like it would be
@@ -30,7 +31,7 @@ class LocMemStorage(Storage):
             content = content.encode()
         except AttributeError:
             pass
-        with self._lock.writer():
+        with self._lock:
             while name in self.cache:
                 name = self.get_available_name(name)
             self.cache[name] = FakeContent(content, now())
