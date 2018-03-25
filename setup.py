@@ -21,9 +21,7 @@ REQUIRES_PYTHON = '>=2.7, !=3.0.*, !=3.1.*, !=3.2.*'
 VERSION = None
 
 # What packages are required for this module to be executed?
-REQUIRED = [
-    'django',
-]
+REQUIRED = []
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
