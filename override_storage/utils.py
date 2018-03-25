@@ -21,6 +21,7 @@ class Stats(object):
 
     read_cnt = 0
     save_cnt = 0
+    delete_cnt = 0
 
     def get_full_field_name(self, field):
         meta = field.model._meta
@@ -41,6 +42,18 @@ class Stats(object):
     def log_save(self, field, fname):
         self.save_cnt += 1
         self.saves_by_field[self.get_full_field_name(field)] = fname
+
+    def log_delete(self, field, fname):
+        self.delete_cnt += 1
+        self.deletes_by_field[self.get_full_field_name(field)] = fname
+
+    @cached_property
+    def deletes_by_field(self):
+        return defaultdict(list)
+
+    @property
+    def fields_delete(self):
+        return list(self.deletes_by_field)
 
     def _get_content_file(self, app_label, model_name, field_name, fname):
         try:

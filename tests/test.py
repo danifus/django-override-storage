@@ -84,6 +84,24 @@ class OverrideStorageTestCase(TestCase):
             self.assertEqual(upload_file_field.storage, outer_storage)
         self.assertEqual(upload_file_field.storage, original_storage)
 
+    def test_delete(self):
+        """delete removes entry from cache."""
+        storage = override_storage.LocMemStorage()
+        name = 'test_file'
+        content = ContentFile('test')
+        storage._save(name, content)
+
+        self.assertTrue(name in storage.cache)
+        storage.delete(name)
+        self.assertFalse(name in storage.cache)
+
+    def test_delete_missing_key(self):
+        """delete asserts no error if the key is already not in the cache."""
+        storage = override_storage.LocMemStorage()
+        name = 'test_file'
+        self.assertFalse(name in storage.cache)
+        storage.delete(name)
+
 
 class StatsOverrideStorageTestCase(TestCase):
 
@@ -188,6 +206,30 @@ class StatsOverrideStorageTestCase(TestCase):
             obj.upload_file.save('test.txt', ContentFile('content'))
             with self.assertRaises(override_storage.StatsTestStorageError):
                 storage.get_content_file(field_key, fname)
+
+    def test_delete(self):
+        """delete removes entry from cache."""
+        # TODO: initialise a StatsLocMemStorage
+        with override_storage.locmem_stats_override_storage() as stats:
+            name = 'test_file'
+            obj = SimpleModel()
+            obj.upload_file.save(name, ContentFile('content'))
+            obj.upload_file.delete()
+            self.assertEqual(stats.delete_cnt, 1)
+
+    def test_delete_missing_key(self):
+        """delete asserts no error if the key is already not in the cache.
+
+        Still adds to the delete count.
+        """
+        with override_storage.locmem_stats_override_storage() as stats:
+            name = 'test_file'
+            obj = SimpleModel()
+            obj.upload_file.save(name, ContentFile('content'))
+            obj.upload_file.delete()
+            self.assertEqual(stats.delete_cnt, 1)
+            obj.upload_file.delete()
+            self.assertEqual(stats.delete_cnt, 1)
 
 
 @override_storage.locmem_stats_override_storage(name='override_storage_field')

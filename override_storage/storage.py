@@ -37,6 +37,13 @@ class LocMemStorage(Storage):
             self.cache[name] = FakeContent(content, now())
         return name
 
+    def _delete(self, name):
+        # FileSystemStorage doesn't raise an error if the file doesn't exist.
+        try:
+            del self.cache[name]
+        except KeyError:
+            pass
+
     def path(self, name):
         """
         Return a local filesystem path where the file can be retrieved using
@@ -49,7 +56,8 @@ class LocMemStorage(Storage):
         """
         Delete the specified file from the storage system.
         """
-        self.cache.delete(name)
+        with self._lock:
+            self._delete(name)
 
     def exists(self, name):
         """
@@ -122,3 +130,10 @@ class StatsLocMemStorage(LocMemStorage):
     def _save(self, name, content):
         self.log_save(name)
         return super(StatsLocMemStorage, self)._save(name, content)
+
+    def log_delete(self, name):
+        self.stats.log_delete(self.field, name)
+
+    def _delete(self, name):
+        self.log_delete(name)
+        return super(StatsLocMemStorage, self)._delete(name)
