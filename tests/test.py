@@ -58,6 +58,21 @@ class OverrideStorageTestCase(TestCase):
         self.assertFalse(os.path.exists(expected_path))
         self.assertEqual(content, read_content)
 
+    def test_save_bytes_data(self):
+        """save works with bytes objects with bytes which can't be decoded to
+        ascii in both Python 2 and 3.
+        """
+        name = 'saved_file.txt'
+        content = b'saved_file \xff'
+        obj = SimpleModel()
+        with override_storage.override_storage():
+            obj.upload_file.save(name, ContentFile(content))
+            read_content = obj.upload_file.read()
+        expected_path = original_storage.path(name)
+
+        self.assertFalse(os.path.exists(expected_path))
+        self.assertEqual(content, read_content)
+
     def test_method_decorator_with_no_parens_raises_error(self):
         """Using override_storage fails as a decorator with no parens."""
         with self.assertRaises(override_storage.TestStorageError):

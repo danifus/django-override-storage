@@ -27,10 +27,8 @@ class LocMemStorage(Storage):
         # Make sure that the cache stores the file as bytes, like it would be
         # on disk.
         content = content.read()
-        try:
+        if not isinstance(content, (bytes, bytearray)):
             content = content.encode()
-        except AttributeError:
-            pass
         with self._lock:
             while name in self.cache:
                 name = self.get_available_name(name)
