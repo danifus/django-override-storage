@@ -102,9 +102,9 @@ class StorageTestMixin(object):
     previous_storages = None
 
     def push_storage_stack(self):
-        previous_storages = self.previous_storages = {}
-        self.storage_stack.append(previous_storages)
-        return previous_storages
+        self.previous_storages = {}
+        self.storage_stack.append(self.previous_storages)
+        return self.previous_storages
 
     def pop_storage_stack(self):
         popped_storages = self.storage_stack.pop()
@@ -154,6 +154,13 @@ class StorageTestMixin(object):
 
         previous_storages = self.push_storage_stack()
         for field in self.filefields:
+            if field in previous_storages:
+                # Proxy models share field instances across multiple objects
+                # but we only want to replace their storage once. Replacing
+                # the storage multiple times results in losing track of what
+                # the original storage was previously and breaks restoring the
+                # field to its original storage.
+                continue
             previous_storages[field] = field.storage
             self.set_storage(field)
 

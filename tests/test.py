@@ -4,7 +4,7 @@ import mock
 from django.core.files.base import ContentFile
 from django.test import TestCase
 
-from .models import SimpleModel
+from .models import SimpleModel, SimpleProxyModel
 from .context import override_storage
 
 
@@ -97,6 +97,21 @@ class OverrideStorageTestCase(TestCase):
                 self.assertEqual(upload_file_field.storage, inner_storage)
 
             self.assertEqual(upload_file_field.storage, outer_storage)
+        self.assertEqual(upload_file_field.storage, original_storage)
+
+    def test_proxy_models(self):
+        """Proxy models should not interfer with the override or tear down.
+
+        Because proxy models have the same filefield instance as the parent
+        model, there is a risk that a filefield storage will be overridden
+        twice affecting the ability to restore it to its original storage.
+        """
+        # Make sure that the tests actually have a proxy model present.
+        self.assertTrue(SimpleProxyModel._meta.proxy)
+        upload_file_field = SimpleModel._meta.get_field('upload_file')
+        original_storage = upload_file_field.storage
+        with override_storage.override_storage():
+            self.assertNotEqual(upload_file_field.storage, original_storage)
         self.assertEqual(upload_file_field.storage, original_storage)
 
     def test_delete(self):
