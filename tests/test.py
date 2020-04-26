@@ -3,6 +3,7 @@ import mock
 
 from django.core.files.base import ContentFile
 from django.test import TestCase
+from django.test.utils import override_settings
 
 from .models import SimpleModel, SimpleProxyModel
 from .context import override_storage
@@ -72,6 +73,26 @@ class OverrideStorageTestCase(TestCase):
 
         self.assertFalse(os.path.exists(expected_path))
         self.assertEqual(content, read_content)
+
+    @override_settings(MEDIA_URL="/media/")
+    def test_default_url(self):
+        name = 'saved_file.txt'
+        content = 'saved_file'.encode()
+        obj = SimpleModel()
+        with override_storage.override_storage():
+            obj.upload_file.save(name, ContentFile(content))
+            url = obj.upload_file.url
+
+        self.assertEqual(url, "/media/" + name)
+
+    def test_base_url(self):
+        name = 'saved_file.txt'
+        content = 'saved_file'.encode()
+        obj = SimpleModel()
+        with override_storage.override_storage(storage_kwargs={"base_url": "/my_media/"}):
+            obj.upload_file.save(name, ContentFile(content))
+            url = obj.upload_file.url
+        self.assertEqual(url, "/my_media/" + name)
 
     def test_method_decorator_with_no_parens_raises_error(self):
         """Using override_storage fails as a decorator with no parens."""

@@ -1,9 +1,13 @@
 from collections import namedtuple
 from threading import RLock
+from urllib.parse import urljoin
 
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from django.utils.deconstruct import deconstructible
+from django.utils.encoding import filepath_to_uri
+from django.utils.functional import cached_property
 from django.utils.timezone import now
 
 
@@ -13,9 +17,10 @@ FakeContent = namedtuple('FakeContent', ['content', 'time'])
 @deconstructible
 class LocMemStorage(Storage):
 
-    def __init__(self, cache_params=None):
+    def __init__(self, base_url=None, cache_params=None):
         self.cache = {}
         self._lock = RLock()
+        self._base_url = base_url
 
     def _open(self, name, mode='rb'):
         if 'w' in mode:
@@ -41,6 +46,14 @@ class LocMemStorage(Storage):
             del self.cache[name]
         except KeyError:
             pass
+
+    @cached_property
+    def base_url(self):
+        if self._base_url is not None:
+            if not self._base_url.endswith('/'):
+                self._base_url += '/'
+            return self._base_url
+        return settings.MEDIA_URL
 
     def path(self, name):
         """
@@ -82,7 +95,12 @@ class LocMemStorage(Storage):
         Return an absolute URL where the file's contents can be accessed
         directly by a Web browser.
         """
-        return name
+        if self.base_url is None:
+            raise ValueError("This file is not accessible via a URL.")
+        url = filepath_to_uri(name)
+        if url is not None:
+            url = url.lstrip('/')
+        return urljoin(self.base_url, url)
 
     def get_accessed_time(self, name):
         """
