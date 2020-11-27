@@ -120,15 +120,15 @@ the names of the files are recorded.
                 obj.upload_file.save('test.txt', ContentFile('content'))
 
                 # Check how many files have been saved
-                self.storage_stats.save_cnt
+                storage_stats.save_cnt
 
                 # Check which fields were read or saved
-                self.storage_stats.fields_saved
-                self.storage_stats.fields_read
+                storage_stats.fields_saved
+                storage_stats.fields_read
 
                 # Get a list of names, by field, which have been saved or read.
-                self.storage_stats.reads_by_field
-                self.storage_stats.saves_by_field
+                storage_stats.reads_by_field
+                storage_stats.saves_by_field
 
                 # Get your file back!
                 content = obj.upload_file.read()
