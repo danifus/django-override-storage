@@ -1,5 +1,4 @@
 import os
-import mock
 
 from django.core.files.base import ContentFile
 from django.test import TestCase
@@ -7,6 +6,11 @@ from django.test.utils import override_settings
 
 from .models import SimpleModel, SimpleProxyModel
 from .context import override_storage
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 
 original_storage = SimpleModel._meta.get_field('upload_file').storage

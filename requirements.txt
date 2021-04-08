@@ -1,2 +1,2 @@
 django
-mock
+mock;python_version<"3.6"
