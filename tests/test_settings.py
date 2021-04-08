@@ -16,3 +16,5 @@ DATABASES = {
         'NAME': os.path.join(HERE, 'test.db'),
     }
 }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
