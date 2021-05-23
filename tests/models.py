@@ -24,3 +24,32 @@ class SimpleProxyModel(SimpleModel):
 
     class Meta:
         proxy = True
+
+
+class AbstractBaseModel(models.Model):
+
+    upload_file = models.FileField(storage=StrictFNameFileSystemStorage())
+
+    class Meta:
+        abstract = True
+
+
+class ChildModelA(AbstractBaseModel):
+    pass
+
+
+class ChildModelB(AbstractBaseModel):
+    pass
+
+
+class InheritedModel(models.Model):
+
+    upload_file = models.FileField(storage=StrictFNameFileSystemStorage())
+
+
+class InheritedChildA(InheritedModel):
+    pass
+
+
+class InheritedChildB(InheritedModel):
+    pass

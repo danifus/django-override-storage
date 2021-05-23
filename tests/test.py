@@ -4,6 +4,7 @@ from django.core.files.base import ContentFile
 from django.test import TestCase
 from django.test.utils import override_settings
 
+from . import models
 from .models import SimpleModel, SimpleProxyModel
 from .context import override_storage
 
@@ -138,6 +139,32 @@ class OverrideStorageTestCase(TestCase):
         with override_storage.override_storage():
             self.assertNotEqual(upload_file_field.storage, original_storage)
         self.assertEqual(upload_file_field.storage, original_storage)
+
+    def test_abstract_models(self):
+        """Abstract models should each have their inherited fields swapped.
+        """
+        upload_file_field_a = models.ChildModelA._meta.get_field('upload_file')
+        upload_file_field_b = models.ChildModelB._meta.get_field('upload_file')
+        original_storage_a = upload_file_field_a.storage
+        original_storage_b = upload_file_field_b.storage
+        with override_storage.override_storage():
+            self.assertNotEqual(upload_file_field_a.storage, original_storage_a)
+            self.assertNotEqual(upload_file_field_b.storage, original_storage_b)
+        self.assertEqual(upload_file_field_a.storage, original_storage_a)
+        self.assertEqual(upload_file_field_b.storage, original_storage_b)
+
+    def test_concrete_inheritance_models(self):
+        """Concrete inheritance models should each have their inherited fields swapped.
+        """
+        upload_file_field_a = models.InheritedChildA._meta.get_field('upload_file')
+        upload_file_field_b = models.InheritedChildB._meta.get_field('upload_file')
+        original_storage_a = upload_file_field_a.storage
+        original_storage_b = upload_file_field_b.storage
+        with override_storage.override_storage():
+            self.assertNotEqual(upload_file_field_a.storage, original_storage_a)
+            self.assertNotEqual(upload_file_field_b.storage, original_storage_b)
+        self.assertEqual(upload_file_field_a.storage, original_storage_a)
+        self.assertEqual(upload_file_field_b.storage, original_storage_b)
 
     def test_delete(self):
         """delete removes entry from cache."""
