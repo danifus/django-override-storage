@@ -114,6 +114,21 @@ class StorageTestMixin(object):
             self.previous_storages = None
         return popped_storages
 
+    def get_field_hash(self, field):
+        # GH#8:
+        # In Django < 3.2, instances of fields that appear on multiple
+        # models via inheritance do not have unique hashes from __hash__
+        # for each model they eventually appear on. This causes the
+        # dictionary value in previous_storages to be overwritten when
+        # the same field is used on multiple models via inheritance as
+        # __hash__ is the same.
+        # This hash value implementation is taken from django 3.2
+        return hash((
+            field.creation_counter,
+            field.model._meta.app_label if hasattr(field, 'model') else None,
+            field.model._meta.model_name if hasattr(field, 'model') else None,
+        ))
+
     @cached_property
     def filefields(self):
         """
@@ -154,14 +169,16 @@ class StorageTestMixin(object):
 
         previous_storages = self.push_storage_stack()
         for field in self.filefields:
-            if field in previous_storages:
+            if self.get_field_hash(field) in previous_storages:
                 # Proxy models share field instances across multiple objects
                 # but we only want to replace their storage once. Replacing
                 # the storage multiple times results in losing track of what
                 # the original storage was previously and breaks restoring the
                 # field to its original storage.
                 continue
-            previous_storages[field] = field.storage
+            previous_storages[self.get_field_hash(field)] = (
+                field, field.storage
+            )
             self.set_storage(field)
 
     def teardown_storage(self):
@@ -169,7 +186,7 @@ class StorageTestMixin(object):
             previous_storages = self.pop_storage_stack()
         except IndexError:
             return
-        for field, original_storage in previous_storages.items():
+        for field, original_storage in previous_storages.values():
             field.storage = original_storage
 
 
